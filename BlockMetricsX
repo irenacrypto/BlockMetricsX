@@ -1,0 +1,111 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import requests
+
+class BlockMetricsX:
+    def __init__(self, api_url: str):
+        self.api_url = api_url
+        self.block_data = pd.DataFrame()
+        self.transaction_data = pd.DataFrame()
+
+    def fetch_block_data(self, block_height: int) -> dict:
+        """
+        Fetch data for a specific block.
+        """
+        url = f"{self.api_url}/block/{block_height}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        else:
+            print(f"Error fetching block data: {response.status_code}")
+            return {}
+
+    def fetch_transaction_data(self, tx_id: str) -> dict:
+        """
+        Fetch data for a specific transaction.
+        """
+        url = f"{self.api_url}/transaction/{tx_id}"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        else:
+            print(f"Error fetching transaction data: {response.status_code}")
+            return {}
+
+    def analyze_block_metrics(self, block_data: dict) -> pd.DataFrame:
+        """
+        Analyze block metrics from block data.
+        """
+        df = pd.DataFrame([{
+            'block_height': block_data.get('height'),
+            'timestamp': pd.to_datetime(block_data.get('timestamp')),
+            'transactions': len(block_data.get('transactions', [])),
+            'total_fees': sum(tx.get('fee', 0) for tx in block_data.get('transactions', []))
+        }])
+        return df
+
+    def visualize_block_metrics(self, df: pd.DataFrame):
+        """
+        Visualize block metrics.
+        """
+        plt.figure(figsize=(14, 7))
+        sns.barplot(data=df, x='block_height', y='total_fees')
+        plt.title('Block Fees by Block Height')
+        plt.xlabel('Block Height')
+        plt.ylabel('Total Fees')
+        plt.grid(True)
+        plt.show()
+
+    def analyze_transaction_metrics(self, transaction_data: dict) -> pd.DataFrame:
+        """
+        Analyze transaction metrics from transaction data.
+        """
+        df = pd.DataFrame([{
+            'tx_id': transaction_data.get('id'),
+            'block_height': transaction_data.get('block_height'),
+            'timestamp': pd.to_datetime(transaction_data.get('timestamp')),
+            'value': transaction_data.get('value'),
+            'fee': transaction_data.get('fee')
+        }])
+        return df
+
+    def visualize_transaction_metrics(self, df: pd.DataFrame):
+        """
+        Visualize transaction metrics.
+        """
+        plt.figure(figsize=(14, 7))
+        plt.scatter(df['timestamp'], df['value'], c='blue', label='Transaction Value')
+        plt.title('Transaction Value Over Time')
+        plt.xlabel('Timestamp')
+        plt.ylabel('Transaction Value')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+# Example usage
+if __name__ == "__main__":
+    api_url = 'https://api.blockchain.example.com'
+
+    block_metrics_x = BlockMetricsX(api_url)
+    
+    # Fetch block data
+    block_height = 123456
+    block_data = block_metrics_x.fetch_block_data(block_height)
+    
+    # Analyze and visualize block data
+    if block_data:
+        block_metrics = block_metrics_x.analyze_block_metrics(block_data)
+        block_metrics_x.visualize_block_metrics(block_metrics)
+    
+    # Fetch transaction data
+    tx_id = 'abc123'
+    transaction_data = block_metrics_x.fetch_transaction_data(tx_id)
+    
+    # Analyze and visualize transaction data
+    if transaction_data:
+        transaction_metrics = block_metrics_x.analyze_transaction_metrics(transaction_data)
+        block_metrics_x.visualize_transaction_metrics(transaction_metrics)
